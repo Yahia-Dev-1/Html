@@ -114,6 +114,10 @@ const storage = {
                 });
             } else {
                 const database = await connectToDatabase();
+                if (!database) {
+                    usingFileStorage = true;
+                    return await storage.find('users', query);
+                }
                 if (query._id && typeof query._id === 'string' && query._id.length === 24) {
                     query._id = new ObjectId(query._id);
                 }
@@ -190,6 +194,10 @@ const storage = {
                 return newUser;
             } else {
                 const database = await connectToDatabase();
+                if (!database) {
+                    usingFileStorage = true;
+                    return await storage.insert('users', item);
+                }
                 const result = await database.collection('users').insertOne(item);
                 return { ...item, _id: result.insertedId };
             }
@@ -200,6 +208,10 @@ const storage = {
     update: async (coll, query, updates) => {
         if (coll === 'users') {
             const database = await connectToDatabase();
+            if (!database) {
+                usingFileStorage = true;
+                return await storage.update('users', query, updates);
+            }
             if (query._id && typeof query._id === 'string' && query._id.length === 24) {
                 query._id = new ObjectId(query._id);
             }
@@ -224,6 +236,10 @@ const storage = {
                 return { deletedCount: 0 };
             } else {
                 const database = await connectToDatabase();
+                if (!database) {
+                    usingFileStorage = true;
+                    return await storage.deleteOne('users', query);
+                }
                 if (query._id && typeof query._id === 'string' && query._id.length === 24) {
                     query._id = new ObjectId(query._id);
                 }
@@ -258,6 +274,10 @@ const storage = {
                 return null;
             } else {
                 const database = await connectToDatabase();
+                if (!database) {
+                    usingFileStorage = true;
+                    return await storage.atomicUpdate('users', query, callback);
+                }
                 if (query._id && typeof query._id === 'string' && query._id.length === 24) {
                     query._id = new ObjectId(query._id);
                 }
@@ -298,14 +318,7 @@ const storage = {
             // If no database connection, fallback to file storage
             if (!database) {
                 usingFileStorage = true;
-                let users = readUsersFromFile();
-                const user = users.find(user => 
-                    user.username.trim().toLowerCase() === normalizedUsername
-                );
-                if (user && user.username.trim().toLowerCase() === 'yahia') {
-                    user.role = 'Admin';
-                }
-                return user;
+                return await storage.findUser(username);
             }
             
             // For MongoDB, use case-insensitive query
@@ -325,7 +338,13 @@ const storage = {
             userCount = users.length;
         } else {
             const database = await connectToDatabase();
-            userCount = await database.collection('users').countDocuments();
+            if (database) {
+                userCount = await database.collection('users').countDocuments();
+            } else {
+                usingFileStorage = true;
+                const users = readUsersFromFile();
+                userCount = users.length;
+            }
         }
 
         // Check if user should be admin (yahia or first user)
