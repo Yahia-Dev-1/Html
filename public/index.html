@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>اختبار إتقان HTML</title>
+    <!-- Disable console logs in production -->
+    <script>
+        console.log = function() {};
+        console.info = function() {};
+        console.warn = function() {};
+        console.error = function() {};
+    </script>
+    <meta name="description" content="اختبر معلوماتك في HTML من خلال أسئلة وتحديات تفاعلية" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <script src="https://unpkg.com/@rive-app/canvas@2.15.2/rive.min.js"></script>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="style.css" />
+    <script src="eye-tracking.js"></script>
+</head>
+
+<body>
+
+    <!-- =========== SCREEN: Auth (Login/Register) =========== -->
+    <div id="screen-auth" class="screen animate-fadeIn">
+        <div class="auth-container">
+            <!-- Characters Panel -->
+            <div class="characters-panel">
+                <div class="character char-1" id="char-1">
+                    <div class="eyes">
+                        <div class="eye"></div>
+                        <div class="eye"></div>
+                    </div>
+                    <div class="mouth"></div>
+                </div>
+                <div class="character char-2" id="char-2">
+                    <div class="eyes">
+                        <div class="eye"></div>
+                        <div class="eye"></div>
+                    </div>
+                    <div class="mouth"></div>
+                </div>
+                <div class="character char-3" id="char-3">
+                    <div class="eyes">
+                        <div class="eye"></div>
+                        <div class="eye"></div>
+                    </div>
+                    <div class="mouth"></div>
+                </div>
+                <div class="character char-4" id="char-4">
+                    <div class="eyes">
+                        <div class="eye"></div>
+                        <div class="eye"></div>
+                    </div>
+                    <div class="mouth"></div>
+                </div>
+            </div>
+            
+            <div class="container pt-12">
+                <div class="auth-card">
+                    <div class="auth-tabs">
+                        <button id="tab-login" class="tab-btn active">تسجيل الدخول</button>
+                        <button id="tab-register" class="tab-btn">إنشاء حساب</button>
+                    </div>
+                    <form id="auth-form" class="auth-box">
+                        <div class="form-group" id="name-field">
+                            <label for="fullName">الاسم الكامل</label>
+                            <input type="text" id="fullName" placeholder="أدخل اسمك الأول والثاني (مثال: محمد أحمد)" autocomplete="name">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">كلمة المرور</label>
+                            <input type="password" id="password" placeholder="أدخل كلمة المرور" required autocomplete="current-password">
+                        </div>
+                        <button type="submit" id="btn-auth" class="btn btn-blue">تسجيل الدخول</button>
+                        <p id="auth-error" class="error-text hidden"></p>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========== SCREEN: Dashboard =========== -->
+    <div id="screen-dashboard" class="screen">
+        <div class="dash-nav">
+            <div class="nav-container">
+                <div class="nav-right">
+                    <div class="user-profile">
+                        <div class="user-avatar">👤</div>
+                        <div class="user-details">
+                            <div class="user-info-row">
+                                <span id="user-display" class="nav-username">المتعلم</span>
+                                <div class="points-bubble" id="user-points-display" style="display: none;">
+                                    <span class="points-icon">💰</span>
+                                    <span class="points-number" id="user-points">0</span>
+                                    <span class="points-text">نقطة</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-left">
+                    <button id="btn-admin-nav" class="btn btn-ghost hidden">⚙️ لوحة الإدارة</button>
+                    <button id="btn-logout" class="btn btn-logout-nav">🚪 تسجيل الخروج</button>
+                </div>      
+            </div>
+        </div>
+
+        <div class="container pt-24">
+            <header class="dash-welcome">
+                <h1 class="hero-title">أهلاً بك مجدداً!</h1>
+                <p class="hero-sub">استكمل مسار إتقان لغة الـ HTML</p>
+            </header>
+
+            <!-- Comprehensive Material Section -->
+            <section class="material-section">
+                <div class="material-card">
+                    <div class="material-icon">📚</div>
+                    <div class="material-info">
+                        <h3>المادة العلمية الشاملة</h3>
+                        <p>دليل شامل لتعلم بناء المواقع</p>
+                    </div>
+                    <div class="material-actions" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <a href="Web_Building.pdf" target="_blank" class="btn btn-premium-alt">📖 فتح الكتاب</a>
+                        <button onclick="showScreen('training-plan')" class="btn btn-indigo">📅 خطة التعلم (4 أيام)</button>
+                        <button onclick="showScreen('vscode-setup')" class="btn btn-blue">💻 إعداد برنامج البرمجة (VS
+                            Code)</button>
+                    </div>
+                </div>
+            </section>
+
+            <div class="sessions-grid">
+                <!-- Session Cards Generated Dynamically in app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- =========== SCREEN: Training Plan =========== -->
+    <div id="screen-training-plan" class="screen">
+        <div class="container pt-12">
+            <button onclick="showScreen('dashboard')" class="btn btn-ghost" style="margin-bottom: 2rem;">⬅️ العودة للرئيسية</button>
+            
+            <header class="dash-welcome" style="text-align: center; margin-bottom: 3rem;">
+                <h1 class="hero-title">📅 خطة تعلم HTML في 4 أيام</h1>
+                <p class="hero-sub">مسار مكثف من الصفر إلى الاحتراف</p>
+            </header>
+
+            <div class="session-card" style="margin-bottom: 3rem; cursor: default; animation: none; transform: none; min-height: auto; border: 2px solid rgba(96, 165, 250, 0.3);">
+                <div class="session-info">
+                    <h3 style="color: #60a5fa; text-align: center; font-size: 1.8rem; margin-bottom: 1.5rem;">🎯 الهدف العام</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; color: #f8fafc;">
+                        <div class="goal-item" style="background: rgba(15,23,42,0.4); padding: 1rem; border-radius: 12px; text-align: center;">
+                            <span style="font-size: 2rem; display: block; margin-bottom: 0.5rem;">🌐</span>
+                            <p>فهم الفرق بين Front-End و Back-End</p>
+                        </div>
+                        <div class="goal-item" style="background: rgba(15,23,42,0.4); padding: 1rem; border-radius: 12px; text-align: center;">
+                            <span style="font-size: 2rem; display: block; margin-bottom: 0.5rem;">🏗️</span>
+                            <p>استخدام HTML بشكل صحيح وبناء صفحات ويب</p>
+                        </div>
+                        <div class="goal-item" style="background: rgba(15,23,42,0.4); padding: 1rem; border-radius: 12px; text-align: center;">
+                            <span style="font-size: 2rem; display: block; margin-bottom: 0.5rem;">✨</span>
+                            <p>تطبيق أفضل الممارسات (Clean Code + Semantic)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sessions-grid">
+                <!-- Day 1 -->
+                <div class="stat-card" style="text-align: right; display: flex; flex-direction: column; border-top: 5px solid #60a5fa;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
+                        <h3 style="color: #60a5fa; font-size: 1.5rem; margin: 0;">🟢 اليوم الأول: الأساسيات</h3>
+                        <span style="background: rgba(96, 165, 250, 0.2); color: #60a5fa; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem;">1 ← 15</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <h4 style="color: #f8fafc; margin-bottom: 0.5rem;">📚 المحتوى:</h4>
+                        <ul style="color: #cbd5e1; list-style-position: inside; font-size: 0.95rem; line-height: 1.8;">
+                            <li>Front-End vs Back-End</li>
+                            <li>HTML vs CSS vs JavaScript</li>
+                            <li>تثبيت Visual Studio Code</li>
+                            <li>الهيكل الأساسي (DOCTYPE, html, head, body)</li>
+                            <li>النصوص: العناوين (h1 → h6)، الفقرات (p)، كسر السطر (br)</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: rgba(96, 165, 250, 0.1); padding: 1rem; border-radius: 1rem; margin-top: auto;">
+                        <h4 style="color: #60a5fa; margin-bottom: 0.5rem;">🎯 الهدف التطبيقي:</h4>
+                        <p style="color: #f8fafc; font-size: 0.95rem;">إنشاء صفحة بسيطة تحتوي على عنوان ووصف</p>
+                    </div>
+                </div>
+
+                <!-- Day 2 -->
+                <div class="stat-card" style="text-align: right; display: flex; flex-direction: column; border-top: 5px solid #fbbf24;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
+                        <h3 style="color: #fbbf24; font-size: 1.5rem; margin: 0;">🟡 اليوم الثاني: الوسائط والقوائم</h3>
+                        <span style="background: rgba(251, 191, 36, 0.2); color: #fbbf24; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem;">17 ← 22</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <h4 style="color: #f8fafc; margin-bottom: 0.5rem;">📚 المحتوى:</h4>
+                        <ul style="color: #cbd5e1; list-style-position: inside; font-size: 0.95rem; line-height: 1.8;">
+                            <li>الروابط &lt;a&gt; والصور &lt;img&gt;</li>
+                            <li>الفيديو والصوت: &lt;video&gt;, &lt;audio&gt;</li>
+                            <li>القوائم: النقطية (ul)، المرقمة (ol)، العناصر (li)</li>
+                            <li>الجداول: table, tr, td, th</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: rgba(251, 191, 36, 0.1); padding: 1rem; border-radius: 1rem; margin-top: auto;">
+                        <h4 style="color: #fbbf24; margin-bottom: 0.5rem;">🎯 الهدف التطبيقي:</h4>
+                        <p style="color: #f8fafc; font-size: 0.95rem;">إنشاء صفحة تحتوي على صورة، قائمة، وجدول بسيط</p>
+                    </div>
+                </div>
+
+                <!-- Day 3 -->
+                <div class="stat-card" style="text-align: right; display: flex; flex-direction: column; border-top: 5px solid #f97316;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
+                        <h3 style="color: #f97316; font-size: 1.5rem; margin: 0;">🟠 اليوم الثالث: الفورمز والتنظيم</h3>
+                        <span style="background: rgba(249, 115, 22, 0.2); color: #f97316; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem;">23 ← 33</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <h4 style="color: #f8fafc; margin-bottom: 0.5rem;">📚 المحتوى:</h4>
+                        <ul style="color: #cbd5e1; list-style-position: inside; font-size: 0.95rem; line-height: 1.8;">
+                            <li>الفورمز &lt;form&gt; وأنواع الـ input (text, email, password)</li>
+                            <li>الأزرار &lt;button&gt;</li>
+                            <li>الفرق بين Block vs Inline</li>
+                            <li>العناصر التنسيقية: div, section, article</li>
+                            <li>أساسيات Clean Code وتنظيم الكود</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: rgba(249, 115, 22, 0.1); padding: 1rem; border-radius: 1rem; margin-top: auto;">
+                        <h4 style="color: #f97316; margin-bottom: 0.5rem;">🎯 الهدف التطبيقي:</h4>
+                        <p style="color: #f8fafc; font-size: 0.95rem;">إنشاء نموذج تسجيل وصفحة منظمة باستخدام div و section</p>
+                    </div>
+                </div>
+
+                <!-- Day 4 -->
+                <div class="stat-card" style="text-align: right; display: flex; flex-direction: column; border-top: 5px solid #3b82f6;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
+                        <h3 style="color: #3b82f6; font-size: 1.5rem; margin: 0;">🔵 اليوم الرابع: الهيكلة الاحترافية</h3>
+                        <span style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem;">34 ← 46</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <h4 style="color: #f8fafc; margin-bottom: 0.5rem;">📚 المحتوى:</h4>
+                        <ul style="color: #cbd5e1; list-style-position: inside; font-size: 0.95rem; line-height: 1.8;">
+                            <li>Semantic Tags (header, nav, main, footer)</li>
+                            <li>استخدام div بشكل احترافي</li>
+                            <li>Meta tags: charset, description</li>
+                            <li>Viewport ودعم الموبايل</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: rgba(59, 130, 246, 0.1); padding: 1rem; border-radius: 1rem; margin-top: auto;">
+                        <h4 style="color: #3b82f6; margin-bottom: 0.5rem;">🎯 الهدف التطبيقي:</h4>
+                        <p style="color: #f8fafc; font-size: 0.95rem;">إنشاء صفحة موقع كاملة (Header + Main + Footer)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="explanation-box correct-box" style="margin-top: 3rem; text-align: right; border-left: none; border-right: 4px solid #10b981;">
+                <div class="explanation-inner" style="display: flex; align-items: flex-start; gap: 1.5rem;">
+                    <span class="bulb-icon" style="font-size: 2rem;">💡</span>
+                    <div>
+                        <h3 class="explanation-title" style="color: #10b981; margin-bottom: 1rem;">طريقة الشرح اليومية:</h3>
+                        <div class="explanation-body" style="font-size: 1.1rem; display: flex; gap: 2rem; flex-wrap: wrap;">
+                            <span style="display: flex; align-items: center; gap: 0.5rem;">📖 شرح نظري بسيط</span>
+                            <span style="display: flex; align-items: center; gap: 0.5rem;">💻 تطبيق مباشر</span>
+                            <span style="display: flex; align-items: center; gap: 0.5rem;">📝 Quiz (10 أسئلة)</span>
+                            <span style="display: flex; align-items: center; gap: 0.5rem;">🔥 Challenge (4 مهام)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="session-card" style="margin-top: 2rem; margin-bottom: 4rem; cursor: default; animation: none; transform: none; min-height: auto; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1)); border: 1px solid rgba(16, 185, 129, 0.2);">
+                <div class="session-info" style="text-align: center;">
+                    <h3 style="color: #10b981; font-size: 1.6rem; margin-bottom: 0.5rem;">🔥 النتيجة النهائية</h3>
+                    <p style="color: #cbd5e1; font-size: 1.1rem;">بعد 4 أيام، ستكون قد بنيت موقعك الأول من الصفر وفهمت الأساسيات بشكل صحيح لتكون جاهزاً لتعلم CSS مباشرة!</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- =========== SCREEN: Category Select =========== -->
+    <div id="screen-category" class="screen">
+        <div class="container pt-12">
+            <button id="btn-back-category" class="btn btn-ghost" style="margin-bottom: 20px;">⬅️ العودة
+                للرئيسية</button>
+            <h1 class="hero-title" style="text-align: center; margin-bottom: 3rem;">محتوى المرحلة</h1>
+            <div id="categories-grid" class="categories-grid"></div>
+        </div>
+    </div>
+
+    <!-- =========== SCREEN: Quiz =========== -->
+    <div id="screen-quiz" class="screen">
+        <div class="container pt-12">
+            <button id="btn-back-quiz" class="btn btn-ghost" style="margin-bottom: 20px;">⬅️ إلغاء الاختبار</button>
+
+            <!-- Progress row -->
+            <div class="progress-row">
+                <div class="progress-col">
+                    <div class="progress-labels">
+                        <span class="progress-label-text" id="q-progress-text">السؤال: <span id="q-current"
+                                class="text-blue">1</span> /
+                            <span id="q-total">10</span></span>
+                        <span class="progress-pct" id="progress-pct">10%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="progress-fill" style="width:10%"></div>
+                    </div>
+                </div>
+                <div class="timer-col">
+                    <div id="timer-display" class="timer-number">30</div>
+                    <div class="timer-label">الوقت المتبقي</div>
+                </div>
+            </div>
+
+            <!-- Question card -->
+            <div class="card-wrapper">
+                <div class="quiz-card" id="quiz-card">
+                    <div class="card-accent"></div>
+                    <h2 id="question-text" class="question-text"></h2>
+
+                    <div id="options-grid" class="options-grid"></div>
+
+                    <!-- Explanation -->
+                    <div id="explanation-box" class="explanation-box hidden">
+                        <div class="explanation-inner">
+                            <span class="bulb-icon">💡</span>
+                            <div>
+                                <h3 class="explanation-title">شرح الإجابة</h3>
+                                <p id="explanation-text" class="explanation-body"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action buttons -->
+                    <div class="action-row">
+                        <button id="btn-confirm" class="btn btn-blue" disabled>تأكيد الإجابة</button>
+                    </div>
+
+                    <!-- Quiz Help Options -->
+                    <div class="quiz-help-options">
+                        <button id="btn-quiz-hint" class="btn btn-hint">💡 تلميح (-5 نقاط)</button>
+                        <button id="btn-delete-option" class="btn btn-delete">❌ حذف خيار (-10 نقاط)</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- =========== SCREEN: VSCode Setup Guide =========== -->
+    <div id="screen-vscode-setup" class="screen">
+        <div class="container pt-12 pb-24">
+            <div class="setup-guide-card">
+                <header class="setup-header">
+                    <div class="vscode-logo">🔵</div>
+                    <h1 class="hero-title">دليل تثبيت Visual Studio Code</h1>
+                    <p class="hero-sub">أشهر محرر أكواد لتعلم البرمجة (HTML, CSS, JavaScript)</p>
+                </header>
+
+                <div class="setup-content">
+                    <section class="setup-step">
+                        <div class="step-badge">1</div>
+                        <h3>رابط التحميل المباشر</h3>
+                        <p>ادخل على الموقع الرسمي واضغط زر <strong>Download</strong> لتحميل النسخة المناسبة لجهازك:</p>
+                        <div class="action-box">
+                            <a href="https://code.visualstudio.com/" target="_blank" class="btn btn-blue">🔗 الموقع
+                                الرسمي لـ VS Code</a>
+                        </div>
+                    </section>
+
+                    <section class="setup-step">
+                        <div class="step-badge">2</div>
+                        <h3>خطوات التثبيت (Windows)</h3>
+                        <ul class="check-list">
+                            <li>افتح ملف <code>VSCodeSetup.exe</code> بعد التحميل.</li>
+                            <li>اضغط <strong>Next</strong> ووافق على الشروط (I accept the agreement).</li>
+                            <li><strong>هام جداً:</strong> أثناء التثبيت، تأكد من تفعيل هذه الخيارات:
+                                <ul>
+                                    <li>✅ Add "Open with Code"</li>
+                                    <li>✅ Add to PATH</li>
+                                    <li>✅ Create Desktop Icon</li>
+                                </ul>
+                            </li>
+                            <li>اضغط <strong>Install</strong> ثم <strong>Finish</strong>.</li>
+                        </ul>
+                    </section>
+
+                    <section class="setup-step highlight-step">
+                        <div class="step-badge">3</div>
+                        <h3>إضافة Live Server (ضرورية للمبتدئين)</h3>
+                        <p>هذه الإضافة تسمح لك بتشغيل صفحة HTML مباشرة في المتصفح لرؤية التعديلات فوراً.</p>
+                        <div class="instruction-box">
+                            <ol>
+                                <li>افتح برنامج VS Code.</li>
+                                <li>اضغط على أيقونة <strong>Extensions</strong> (أو <code>Ctrl+Shift+X</code>).</li>
+                                <li>ابحث عن: <code>Live Server</code></li>
+                                <li>اضغط <strong>Install</strong>.</li>
+                            </ol>
+                        </div>
+                    </section>
+
+                    <section class="setup-step">
+                        <div class="step-badge">4</div>
+                        <h3>تشغيل أول ملف HTML</h3>
+                        <div class="code-example">
+                            <p>1. من قائمة File اختر <strong>New File</strong> واحفظه باسم <code>index.html</code></p>
+                            <p>2. اكتب الكود التالي:</p>
+                            <pre dir="ltr"><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;My First Page&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Hello World&lt;/h1&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+                            <p>3. اضغط كليك يمين داخل الكود واختر <strong>Open with Live Server</strong>.</p>
+                        </div>
+                    </section>
+                    <section class="setup-step">
+                        <div class="step-badge">5</div>
+                        <h3>تثبيت Prettier وتفعيل Auto Save</h3>
+                        <p>لتحسين تنسيق الكود وحفظ التغييرات تلقائيًا:</p>
+                        <ol class="check-list">
+                            <li>افتح نافذة <strong>Extensions</strong> (Ctrl+Shift+X).</li>
+                            <li>ابحث عن <code>Prettier - Code formatter</code> ثم اضغط <strong>Install</strong>.</li>
+                            <li>اذهب إلى <strong>Settings</strong> (Ctrl+,).</li>
+                            <li>فعّل <code>Editor: Format On Save</code> و <code>Files: Auto Save</code> (اختر
+                                "afterDelay" أو "onFocusChange").</li>
+                        </ol>
+                    </section>
+                </div>
+
+                <div class="setup-footer">
+                    <button onclick="showScreen('dashboard')" class="btn btn-ghost">🏠 العودة للوحة التحكم</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toggle Sidebar Button -->
+<button id="toggle-sidebar" class="btn btn-toggle-sidebar" style="position: fixed; top: 20px; left: 20px; z-index: 1001; background: rgba(59, 130, 246, 0.2); border: 2px solid rgba(59, 130, 246, 0.4); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; cursor: pointer; transition: all 0.3s ease; display: none;">
+    📚
+</button>
+
+<!-- =========== SCREEN: Challenge (Code Builder) =========== -->
+    <div id="screen-challenge" class="screen">
+        <div class="container pt-12">
+            <button id="btn-back-challenge" class="btn btn-ghost" style="margin-bottom: 20px;">⬅️ العودة للمرحلة</button>
+            <!-- Header for overall challenge view -->
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h1 class="hero-title">التحدي العملي</h1>
+            </div>
+            <div class="challenge-layout">
+                <aside class="tag-sidebar" id="tag-sidebar">
+                    <button id="mobile-sidebar-toggle" class="mobile-sidebar-toggle">
+                        <span class="toggle-icon">🔼</span>
+                        <span class="toggle-text">مكتبة الوسوم</span>
+                    </button>
+                    <div class="sidebar-content">
+                        <div class="sidebar-header">
+                            <h3>مكتبة الوسوم</h3>
+                            <span class="dd-badge">✨ دعم السحب والإفلات متاح</span>
+                        </div>
+                        <div id="tag-library" class="tag-categories-container">
+                        <!-- Category: Basic Structure -->
+                        <div class="tag-cat">
+                            <h4 class="tag-header">الهيكل الأساسي</h4>
+                            <div class="tag-grid">
+                                <button class="tag-button" draggable="true" data-tag="html">html</button>
+                                <button class="tag-button" draggable="true" data-tag="head">head</button>
+                                <button class="tag-button" draggable="true" data-tag="body">body</button>
+                                <button class="tag-button" draggable="true" data-tag="!DOCTYPE html">DOCTYPE</button>
+                                <button class="tag-button btn-premium-alt" draggable="true" data-tag="all">الهيكل الكامل</button>
+                            </div>
+                        </div>
+
+                        <!-- Category: Text Elements -->
+                        <div class="tag-cat">
+                            <h4 class="tag-header">النصوص</h4>
+                            <div class="tag-grid">
+                                <button class="tag-button" draggable="true" data-tag="h1">h1</button>
+                                <button class="tag-button" draggable="true" data-tag="h2">h2</button>
+                                <button class="tag-button" draggable="true" data-tag="h3">h3</button>
+                                <button class="tag-button" draggable="true" data-tag="h4">h4</button>
+                                <button class="tag-button" draggable="true" data-tag="h5">h5</button>
+                                <button class="tag-button" draggable="true" data-tag="h6">h6</button>
+                                <button class="tag-button" draggable="true" data-tag="p">p</button>
+                                <button class="tag-button" draggable="true" data-tag="br">br</button>
+                                <button class="tag-button" draggable="true" data-tag="strong">strong</button>
+                                <button class="tag-button" draggable="true" data-tag="del">del</button>
+                            </div>
+                        </div>
+
+                        <!-- Category: Links & Paths -->
+                        <div class="tag-cat">
+                            <h4 class="tag-header">الروابط والمسارات</h4>
+                            <div class="tag-grid">
+                                <button class="tag-button" draggable="true" data-tag="a">a</button>
+                                <button class="tag-button" draggable="true" data-tag="link">link</button>
+                                <button class="tag-button" draggable="true" data-tag="mailto">mailto</button>
+                                <button class="tag-button" draggable="true" data-tag="tel">tel</button>
+                            </div>
+                        </div>
+
+                        <!-- Category: Media -->
+                        <div class="tag-cat">
+                            <h4 class="tag-header">الوسائط</h4>
+                            <div class="tag-grid">
+                                <button class="tag-button" draggable="true" data-tag="img">img</button>
+                                <button class="tag-button" draggable="true" data-tag="audio">audio</button>
+                                <button class="tag-button" draggable="true" data-tag="video">video</button>
+                                <button class="tag-button" draggable="true" data-tag="source">source</button>
+                                <button class="tag-button" draggable="true" data-tag="track">track</button>
+                            </div>
+                        </div>
+
+                        <!-- Category: Lists -->
+                        <div class="tag-cat">
+                            <h4 class="tag-header">القوائم</h4>
+                            <div class="tag-grid">
+                                <button class="tag-button" draggable="true" data-tag="ul">ul</button>
+                                <button class="tag-button" draggable="true" data-tag="ol">ol</button>
+                                <button class="tag-button" draggable="true" data-tag="li">li</button>
+                                <button class="tag-button" draggable="true" data-tag="dl">dl</button>
+                                <button class="tag-button" draggable="true" data-tag="dt">dt</button>
+                                <button class="tag-button" draggable="true" data-tag="dd">dd</button>
+                            </div>
+                        </div>
+
+                        <!-- Category: Tables -->
+                        <div class="tag-cat">
+                            <h4 class="tag-header">الجداول</h4>
+                            <div class="tag-grid">
+                                <button class="tag-button" draggable="true" data-tag="table">table</button>
+                                <button class="tag-button" draggable="true" data-tag="thead">thead</button>
+                                <button class="tag-button" draggable="true" data-tag="tbody">tbody</button>
+                                <button class="tag-button" draggable="true" data-tag="tfoot">tfoot</button>
+                                <button class="tag-button" draggable="true" data-tag="tr">tr</button>
+                                <button class="tag-button" draggable="true" data-tag="th">th</button>
+                                <button class="tag-button" draggable="true" data-tag="td">td</button>
+                                <button class="tag-button" draggable="true" data-tag="caption">caption</button>
+                                <button class="tag-button" draggable="true" data-tag="col">col</button>
+                                <button class="tag-button" draggable="true" data-tag="colgroup">colgroup</button>
+                            </div>
+                        </div>
+
+                        <!-- Category: Forms -->
+                        <div class="tag-cat">
+                            <h4 class="tag-header">النماذج</h4>
+                            <div class="tag-grid">
+                                <button class="tag-button" draggable="true" data-tag="form">form</button>
+                                <button class="tag-button" draggable="true" data-tag="input">input</button>
+                                <button class="tag-button" draggable="true" data-tag="label">label</button>
+                                <button class="tag-button" draggable="true" data-tag="textarea">textarea</button>
+                                <button class="tag-button" draggable="true" data-tag="select">select</button>
+                                <button class="tag-button" draggable="true" data-tag="option">option</button>
+                                <button class="tag-button" draggable="true" data-tag="optgroup">optgroup</button>
+                                <button class="tag-button" draggable="true" data-tag="button">button</button>
+                                <button class="tag-button" draggable="true" data-tag="fieldset">fieldset</button>
+                                <button class="tag-button" draggable="true" data-tag="legend">legend</button>
+                                <button class="tag-button" draggable="true" data-tag="datalist">datalist</button>
+                                <button class="tag-button" draggable="true" data-tag="output">output</button>
+                            </div>
+                        </div>
+
+                        <!-- Category: Layout & Semantic -->
+                        <div class="tag-cat">
+                            <h4 class="tag-header">تخطيط ودلالي</h4>
+                            <div class="tag-grid">
+                                <button class="tag-button" draggable="true" data-tag="div">div</button>
+                                <button class="tag-button" draggable="true" data-tag="span">span</button>
+                                <button class="tag-button" draggable="true" data-tag="header">header</button>
+                                <button class="tag-button" draggable="true" data-tag="nav">nav</button>
+                                <button class="tag-button" draggable="true" data-tag="main">main</button>
+                                <button class="tag-button" draggable="true" data-tag="footer">footer</button>
+                                <button class="tag-button" draggable="true" data-tag="section">section</button>
+                                <button class="tag-button" draggable="true" data-tag="article">article</button>
+                                <button class="tag-button" draggable="true" data-tag="aside">aside</button>
+                                <button class="tag-button" draggable="true" data-tag="figure">figure</button>
+                                <button class="tag-button" draggable="true" data-tag="figcaption">figcaption</button>
+                                <button class="tag-button" draggable="true" data-tag="address">address</button>
+                                <button class="tag-button" draggable="true" data-tag="details">details</button>
+                                <button class="tag-button" draggable="true" data-tag="summary">summary</button>
+                            </div>
+                        </div>
+
+                        <!-- Category: Metadata -->
+                        <div class="tag-cat">
+                            <h4 class="tag-header">البيانات الوصفية</h4>
+                            <div class="tag-grid">
+                                <button class="tag-button" draggable="true" data-tag="title">title</button>
+                                <button class="tag-button" draggable="true" data-tag="meta">meta</button>
+                                <button class="tag-button" draggable="true" data-tag="link">link</button>
+                                <button class="tag-button" draggable="true" data-tag="style">style</button>
+                                <button class="tag-button" draggable="true" data-tag="script">script</button>
+                                <button class="tag-button" draggable="true" data-tag="noscript">noscript</button>
+                                <button class="tag-button" draggable="true" data-tag="base">base</button>
+                            </div>
+                        </div>
+
+                        <!-- Category: Embedded Content -->
+                        <div class="tag-cat">
+                            <h4 class="tag-header">محتوى مضمن</h4>
+                            <div class="tag-grid">
+                                <button class="tag-button" draggable="true" data-tag="iframe">iframe</button>
+                                <button class="tag-button" draggable="true" data-tag="embed">embed</button>
+                                <button class="tag-button" draggable="true" data-tag="object">object</button>
+                                <button class="tag-button" draggable="true" data-tag="param">param</button>
+                                <button class="tag-button" draggable="true" data-tag="picture">picture</button>
+                                <button class="tag-button" draggable="true" data-tag="source">source</button>
+                            </div>
+                        </div>
+
+                        <!-- Category: Interactive Elements -->
+                        <div class="tag-cat">
+                            <h4 class="tag-header">عناصر تفاعلية</h4>
+                            <div class="tag-grid">
+                                <button class="tag-button" draggable="true" data-tag="details">details</button>
+                                <button class="tag-button" draggable="true" data-tag="dialog">dialog</button>
+                                <button class="tag-button" draggable="true" data-tag="menu">menu</button>
+                                <button class="tag-button" draggable="true" data-tag="menuitem">menuitem</button>
+                                <button class="tag-button" draggable="true" data-tag="progress">progress</button>
+                                <button class="tag-button" draggable="true" data-tag="meter">meter</button>
+                            </div>
+                        </div>
+
+                        <!-- Category: Text Level Semantics -->
+                        <div class="tag-cat">
+                            <h4 class="tag-header">دلالات نصية</h4>
+                            <div class="tag-grid">
+                                <button class="tag-button" draggable="true" data-tag="abbr">abbr</button>
+                                <button class="tag-button" draggable="true" data-tag="b">b</button>
+                                <button class="tag-button" draggable="true" data-tag="bdi">bdi</button>
+                                <button class="tag-button" draggable="true" data-tag="bdo">bdo</button>
+                                <button class="tag-button" draggable="true" data-tag="blockquote">blockquote</button>
+                                <button class="tag-button" draggable="true" data-tag="cite">cite</button>
+                                <button class="tag-button" draggable="true" data-tag="code">code</button>
+                                <button class="tag-button" draggable="true" data-tag="data">data</button>
+                                <button class="tag-button" draggable="true" data-tag="dfn">dfn</button>
+                                <button class="tag-button" draggable="true" data-tag="em">em</button>
+                                <button class="tag-button" draggable="true" data-tag="i">i</button>
+                                <button class="tag-button" draggable="true" data-tag="kbd">kbd</button>
+                                <button class="tag-button" draggable="true" data-tag="mark">mark</button>
+                                <button class="tag-button" draggable="true" data-tag="q">q</button>
+                                <button class="tag-button" draggable="true" data-tag="rp">rp</button>
+                                <button class="tag-button" draggable="true" data-tag="rt">rt</button>
+                                <button class="tag-button" draggable="true" data-tag="ruby">ruby</button>
+                                <button class="tag-button" draggable="true" data-tag="s">s</button>
+                                <button class="tag-button" draggable="true" data-tag="samp">samp</button>
+                                <button class="tag-button" draggable="true" data-tag="small">small</button>
+                                <button class="tag-button" draggable="true" data-tag="sub">sub</button>
+                                <button class="tag-button" draggable="true" data-tag="sup">sup</button>
+                                <button class="tag-button" draggable="true" data-tag="time">time</button>
+                                <button class="tag-button" draggable="true" data-tag="u">u</button>
+                                <button class="tag-button" draggable="true" data-tag="var">var</button>
+                                <button class="tag-button" draggable="true" data-tag="wbr">wbr</button>
+                            </div>
+                        </div>
+
+                        <!-- Category: Miscellaneous -->
+                        <div class="tag-cat">
+                            <h4 class="tag-header"> متنوعة</h4>
+                            <div class="tag-grid">
+                                <button class="tag-button" draggable="true" data-tag="hr">hr</button>
+                                <button class="tag-button" draggable="true" data-tag="pre">pre</button>
+                                <button class="tag-button" draggable="true" data-tag="template">template</button>
+                                <button class="tag-button" draggable="true" data-tag="canvas">canvas</button>
+                                <button class="tag-button" draggable="true" data-tag="svg">svg</button>
+                                <button class="tag-button" draggable="true" data-tag="math">math</button>
+                                <button class="tag-button" draggable="true" data-tag="map">map</button>
+                                <button class="tag-button" draggable="true" data-tag="area">area</button>
+                                <button class="tag-button" draggable="true" data-tag="slot">slot</button>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+                <main class="builder-main">
+                    <div class="challenge-header">
+                        <h2 id="challenge-title">تحدي: إنشاء عنوان</h2>
+                        <p id="challenge-desc">استخدم وسم h1 لكتابة 'مرحباً بكم'</p>
+                        <h4 style="margin-top: 1rem; color: var(--secondary);">📝 Task Requirements</h4>
+                    </div>
+                    <div class="code-editor">
+                        <h3 style="color:#fff; margin-bottom: 1rem;">🛠️ باني الأكواد</h3>
+                        
+                        <!-- Challenge Hint Container -->
+                        <div id="challenge-hint-container" class="challenge-hint-container" style="display: none;">
+                            <div class="challenge-hint-content">
+                                <div class="hint-header">
+                                    <span class="hint-icon">💡</span>
+                                    <h4>تلميح</h4>
+                                    <button onclick="document.getElementById('challenge-hint-container').style.display='none'" class="hint-close">✕</button>
+                                </div>
+                                <div class="hint-text" id="challenge-hint-text"></div>
+                            </div>
+                        </div>
+                        
+                        <div id="editor-canvas" class="editor-canvas" placeholder="اسحب الوسوم هنا أو انقر للإضافة...">
+                        </div>
+
+                        <!-- ✨ محرر النصوص المباشر الجديد -->
+                        <div style="margin-top: 2rem; border-top: 2px solid #0ea5e9; padding-top: 1.5rem;">
+                            <h4 style="color: #0ea5e9; margin-bottom: 1rem;">✍️ كتابة الكود مباشرة (اختياري)</h4>
+                            <textarea id="html-code-input" class="code-input-area"
+                                placeholder="أكتب كودك HTML مباشرة هنا...&#10;&lt;html&gt;&#10;&lt;body&gt;&#10;&lt;h1&gt;مرحبا&lt;/h1&gt;&#10;&lt;/body&gt;&#10;&lt;/html&gt;&#10;&#10;"
+                                style="width: 100%; height: 150px; padding: 1rem; border: 2px solid #1e293b; border-radius: 8px; background: #0f172a; color: #0ea5e9; font-family: 'Monaco', 'Courier New', monospace; font-size: 14px; resize: vertical; direction: ltr;"></textarea>
+                            <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
+                                <button id="btn-parse-code" class="btn btn-blue" style="flex: 1;">➕ إضافة الكود</button>
+                                <button id="btn-add-empty" class="btn btn-premium-alt" style="flex: 1;">➕ إضافة سطر فارغ</button>
+                            </div>
+                        </div>
+
+                        <div class="editor-actions">
+                            <button id="btn-check-solution" class="btn btn-blue">✅ التحقق من الكود</button>
+                            <button id="btn-show-hint" class="btn btn-show-solution">💡 تلميح (-10 نقاط)</button>
+                            <button id="btn-clear-code" class="btn btn-ghost">🔄 إعادة ضبط المحرر</button>
+                        </div>
+                        <div id="challenge-feedback" class="challenge-feedback hidden"></div>
+                    </div>
+                    <div class="live-preview">
+                        <div class="preview-header">
+                            <h3>المعاينه المباشرة</h3>
+                            <div class="preview-actions">
+                                <button onclick="copyGeneratedCode()" class="preview-btn" title="نسخ الكود">📋</button>
+                                <button onclick="downloadGeneratedHTML()" class="preview-btn" title="تحميل الملف">💾</button>
+                            </div>
+                        </div>
+                        <iframe id="preview-iframe" class="preview-frame"></iframe>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========== SCREEN: Admin Dashboard =========== -->
+    <div id="screen-admin" class="screen">
+        <div class="container pt-12">
+            <div class="admin-header">
+                <h1 class="hero-title">لوحة الإدارة</h1>
+                <button onclick="showScreen('dashboard')" class="btn btn-ghost">🏠 الرئيسية</button>
+            </div>
+            
+            <!-- Admin Stats Grid -->
+            <div class="admin-stats-grid">
+                <div class="admin-stat-card stat-primary">
+                    <div class="stat-icon-large">👥</div>
+                    <div class="stat-info">
+                        <span id="total-students" class="stat-value-large">0</span>
+                        <p class="stat-label-large">الطلاب المسجلين</p>
+                    </div>
+                </div>
+                <div class="admin-stat-card stat-success">
+                    <div class="stat-icon-large">🎓</div>
+                    <div class="stat-info">
+                        <span id="completed-course-count" class="stat-value-large">0</span>
+                        <p class="stat-label-large">أتموا الدورة</p>
+                    </div>
+                </div>
+                <div class="admin-stat-card stat-info">
+                    <div class="stat-icon-large">🎯</div>
+                    <div class="stat-info">
+                        <span id="total-access-count" class="stat-value-large">0</span>
+                        <p class="stat-label-large">إجمالي الدخول</p>
+                    </div>
+                </div>
+                <div class="admin-stat-card stat-warning">
+                    <div class="stat-icon-large">🔄</div>
+                    <div class="stat-info">
+                        <span id="total-retries-count" class="stat-value-large">0</span>
+                        <p class="stat-label-large">إعادة المحاولة</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Student List Table -->
+            <div class="student-list-container enhanced">
+                <div class="table-header">
+                    <h3>📊 تفاصيل الطلاب</h3>
+                    <div class="table-filters">
+                        <input type="text" id="student-search" placeholder="🔍 بحث عن طالب..." class="search-input">
+                    </div>
+                </div>
+                <table class="admin-table enhanced">
+                    <thead>
+                        <tr>
+                            <th>الطالب</th>
+                            <th>المرحلة</th>
+                            <th>النقاط</th>
+                            <th>التفاصيل</th>
+                            <th>الخيارات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="student-list-body"></tbody>
+                </table>
+            </div>
+            
+            <div style="margin-top:2rem; text-align: center;">
+                <button id="btn-admin-logout" class="btn btn-logout-nav enhanced">🚪 تسجيل الخروج</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Button -->
+    <div class="whatsapp-float">
+        <button id="whatsapp-btn" class="whatsapp-button">
+            <div class="whatsapp-logo">
+                <svg viewBox="0 0 24 24" width="32" height="32" stroke="none" fill="white">
+                    <path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.226.58 4.385 1.685 6.284L.22 23.636l5.51-1.446c1.83.993 3.886 1.517 6.001 1.517 6.645 0 12.03-5.385 12.03-12.03S18.676 0 12.031 0zm0 21.681c-1.884 0-3.73-.507-5.346-1.466l-.383-.227-3.971 1.041 1.061-3.873-.249-.396A9.991 9.991 0 0 1 2.025 12.03C2.025 6.51 6.51 2.025 12.03 2.025c2.673 0 5.184 1.042 7.075 2.934a9.96 9.96 0 0 1 2.933 7.072c0 5.518-4.484 10.003-10.007 10.003V21.68zM17.52 14.18c-.301-.151-1.782-.88-2.057-.98-.276-.101-.477-.151-.678.151-.202.302-.78 1.005-.956 1.206-.177.201-.354.226-.655.075-.301-.15-1.272-.469-2.422-1.494-.895-.798-1.503-1.784-1.68-2.086-.176-.301-.019-.464.131-.614.135-.136.302-.352.453-.528.15-.175.201-.301.301-.502.101-.201.05-.377-.025-.528-.075-.15-.678-1.633-.929-2.236-.244-.589-.493-.508-.678-.517-.176-.008-.377-.008-.577-.008s-.528.075-.804.377c-.276.301-1.055 1.03-1.055 2.513s1.08 2.915 1.23 3.116c.15.201 2.126 3.245 5.148 4.549.718.311 1.28.497 1.719.636.721.231 1.378.198 1.896.12.583-.088 1.782-.728 2.033-1.432.251-.703.251-1.306.176-1.432-.075-.126-.276-.201-.577-.352z" />
+                </svg>
+            </div>
+        </button>
+    </div>
+
+    <!-- Global Popup System -->
+    <div id="popup-overlay" class="popup-overlay">
+        <div class="popup-container">
+            <div class="popup-header">
+                <div class="popup-title">
+                    <span class="popup-icon"></span>
+                    <span class="popup-text"></span>
+                </div>
+                <button class="popup-close" onclick="closePopup()">✕</button>
+            </div>
+            <div class="popup-content"></div>
+            <div class="popup-actions"></div>
+        </div>
+    </div>
+
+    <script src="locales.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
