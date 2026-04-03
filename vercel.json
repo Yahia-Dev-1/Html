@@ -3,22 +3,14 @@
   "builds": [
     {
       "src": "server.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": [
-          "index.html",
-          "style.css",
-          "app.js",
-          "locales.js",
-          "translate-quiz.js",
-          "translate-strict.js",
-          "data/**",
-          "Web_Building.pdf"
-        ]
-      }
+      "use": "@vercel/node"
     }
   ],
   "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "server.js"
+    },
     {
       "src": "/(.*)",
       "dest": "server.js"
