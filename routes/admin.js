@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const storage = require('../services/storage');
+const storage = require('../services/supabase-storage');
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'default_secret_key_change_in_production';

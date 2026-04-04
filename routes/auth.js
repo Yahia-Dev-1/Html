@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const storage = require('../services/storage');
+const storage = require('../services/supabase-storage');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'default_secret_key_change_in_production';
 
@@ -70,6 +70,8 @@ router.post('/register', async (req, res) => {
             role: role || 'Student',
             displayName: originalUsername // Keep original case for display
         });
+        
+        console.log('[Auth] User created:', { id: newUser._id, username: newUser.username, storage: newUser._id?.length === 24 ? 'mongodb' : 'file' });
         
         const token = jwt.sign({ id: newUser._id, role: newUser.role }, JWT_SECRET, { expiresIn: '1d' });
 

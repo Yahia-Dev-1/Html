@@ -12,6 +12,8 @@ try {
 }
 
 const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+console.log('[Storage] MONGODB_URI exists:', !!uri);
+console.log('[Storage] MONGODB_URI length:', uri ? uri.length : 0);
 const DATA_DIR = path.join(__dirname, '../data');
 
 let client;
@@ -29,13 +31,25 @@ if (!fs.existsSync(DATA_DIR)) {
 // Read users from file
 const readUsersFromFile = () => {
     try {
-        if (fs.existsSync(USERS_FILE)) {
-            return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+        const usersFile = path.join(DATA_DIR, 'users.json');
+        
+        // Ensure data directory exists
+        if (!fs.existsSync(DATA_DIR)) {
+            fs.mkdirSync(DATA_DIR, { recursive: true });
         }
+        
+        // Ensure users.json exists
+        if (!fs.existsSync(usersFile)) {
+            fs.writeFileSync(usersFile, JSON.stringify([]), 'utf8');
+            return [];
+        }
+        
+        const data = fs.readFileSync(usersFile, 'utf8');
+        return data ? JSON.parse(data) : [];
     } catch (e) {
         console.error('Error reading users file:', e.message);
+        return [];
     }
-    return [];
 };
 
 // Write users to file
@@ -58,20 +72,39 @@ async function connectToDatabase() {
     
     // If no MongoDB URI, use file storage
     if (!uri) {
+        console.log('[Storage] No MONGODB_URI found, using file storage');
         usingFileStorage = true;
+        return null;
+    }
+    
+    // Prevent re-trying if already failed
+    if (usingFileStorage) {
+        console.log('[Storage] Already using file storage, skipping MongoDB retry');
         return null;
     }
     
     try {
         if (!client) {
-            client = new MongoClient(uri);
+            console.log('[Storage] Connecting to MongoDB...');
+            console.log('[Storage] URI starts with:', uri.substring(0, 20) + '...');
+            client = new MongoClient(uri, {
+                serverSelectionTimeoutMS: 10000,
+                connectTimeoutMS: 10000,
+                maxPoolSize: 1,
+                minPoolSize: 0
+            });
             await client.connect();
+            console.log('[Storage] MongoDB client connected successfully');
         }
-        db = client.db(); // Use DB from URI
-        console.log('✅ Connected to MongoDB Atlas successfully');
+        // Extract database name from URI or use default
+        const dbName = uri.includes('/html-quiz') ? 'html-quiz' : 
+                      uri.split('/').pop()?.split('?')[0] || 'test';
+        db = client.db(dbName);
+        console.log(`[Storage] ✅ Connected to MongoDB Atlas (DB: ${dbName})`);
         return db;
     } catch (err) {
-        console.log('MongoDB connection failed, using file storage');
+        console.error('[Storage] ❌ MongoDB connection FAILED:', err.message);
+        console.error('[Storage] Error type:', err.name);
         usingFileStorage = true;
         return null;
     }

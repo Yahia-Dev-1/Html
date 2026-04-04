@@ -120,3 +120,5 @@ data/storage.json
 # data/*.json
 # !data/quizzes.json
 # !data/challenges.json
+
+.vercel
