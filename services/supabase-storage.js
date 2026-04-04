@@ -263,17 +263,30 @@ const storage = {
 
         if (!usingFileStorage && supabase) {
             try {
-                const { error } = await supabase
+                console.log('[SupabaseStorage] Delete query:', query);
+                
+                // Build the match condition based on query fields
+                let matchQuery = {};
+                if (query.id) matchQuery.id = query.id;
+                if (query._id) matchQuery.id = query._id;
+                if (query.username) matchQuery.username = query.username;
+                
+                const { data, error } = await supabase
                     .from('users')
                     .delete()
-                    .match(query);
+                    .match(matchQuery)
+                    .select();
                 
                 if (error) {
-                    console.error('[SupabaseStorage] Delete error:', error.message);
+                    console.error('[SupabaseStorage] Delete error:', error.message, error.code);
+                    return { deletedCount: 0 };
                 }
-                return { deletedCount: 1 };
+                
+                console.log('[SupabaseStorage] Delete success:', data ? data.length : 0, 'rows');
+                return { deletedCount: data ? data.length : 0 };
             } catch (err) {
                 console.error('[SupabaseStorage] Delete exception:', err.message);
+                return { deletedCount: 0 };
             }
         }
         
@@ -291,17 +304,47 @@ const storage = {
     atomicUpdate: async (coll, query, callback) => {
         if (coll !== 'users') return null;
 
-        const user = await storage.findOne(coll, query);
-        if (!user) return null;
+        console.log('[SupabaseStorage] AtomicUpdate query:', query);
+        
+        // Find the user first
+        const users = await storage.find(coll, {});
+        let user = null;
+        
+        // Find by id or _id or username
+        if (query.id) {
+            user = users.find(u => u.id === query.id);
+        } else if (query._id) {
+            user = users.find(u => u.id === query._id);
+        } else if (query.username) {
+            user = users.find(u => u.username === query.username);
+        }
+        
+        if (!user) {
+            console.log('[SupabaseStorage] User not found for atomicUpdate');
+            return null;
+        }
 
         const updated = callback({ ...user });
         
         if (!usingFileStorage && supabase) {
             try {
+                // Convert camelCase back to snake_case for Supabase
+                const updateData = {
+                    username: updated.username,
+                    password: updated.password,
+                    role: updated.role,
+                    display_name: updated.displayName,
+                    current_session: updated.currentSession,
+                    points: updated.points,
+                    completed_challenges: updated.completedChallenges,
+                    completed_quizzes: updated.completedQuizzes,
+                    quiz_scores: updated.quizScores
+                };
+                
                 const { data, error } = await supabase
                     .from('users')
-                    .update(updated)
-                    .match(query)
+                    .update(updateData)
+                    .match({ id: user.id })
                     .select()
                     .single();
                 
@@ -309,7 +352,20 @@ const storage = {
                     console.error('[SupabaseStorage] AtomicUpdate error:', error.message);
                     usingFileStorage = true;
                 } else {
-                    return data;
+                    console.log('[SupabaseStorage] AtomicUpdate success:', data.id);
+                    // Convert back to camelCase for response
+                    return {
+                        id: data.id,
+                        username: data.username,
+                        password: data.password,
+                        role: data.role,
+                        displayName: data.display_name,
+                        currentSession: data.current_session,
+                        points: data.points,
+                        completedChallenges: data.completed_challenges,
+                        completedQuizzes: data.completed_quizzes,
+                        quizScores: data.quiz_scores
+                    };
                 }
             } catch (err) {
                 console.error('[SupabaseStorage] AtomicUpdate exception:', err.message);
@@ -318,15 +374,15 @@ const storage = {
         }
         
         // File fallback
-        const users = readUsersFromFile();
-        const index = users.findIndex(u => 
+        const fileUsers = readUsersFromFile();
+        const index = fileUsers.findIndex(u => 
             (u._id && u._id === query._id) || (u.id && u.id === query.id) ||
             (u.username && u.username === query.username)
         );
         if (index !== -1) {
-            users[index] = { ...users[index], ...updated };
-            writeUsersToFile(users);
-            return users[index];
+            fileUsers[index] = { ...fileUsers[index], ...updated };
+            writeUsersToFile(fileUsers);
+            return fileUsers[index];
         }
         return null;
     },

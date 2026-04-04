@@ -146,6 +146,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     showScreen('dashboard');
                     renderDashboard();
                 }
+            } else if (lastScreen === 'admin') {
+                // Restore admin panel if user is admin
+                if (state.user && state.user.role === 'Admin') {
+                    showScreen('admin');
+                    initAdminDashboard();
+                } else {
+                    showScreen('dashboard');
+                    renderDashboard();
+                }
             } else {
                 // Any other screen, go to dashboard
                 showScreen('dashboard');
@@ -3154,6 +3163,9 @@ async function initAdminDashboard() {
         return;
     }
 
+    // Save lastScreen for refresh restoration
+    sessionStorage.setItem('lastScreen', 'admin');
+
     const tbody = document.getElementById('student-list-body');
     if (tbody) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem;"><span class="loader"></span> جاري تحميل بيانات الطلاب...</td></tr>';
@@ -3246,16 +3258,16 @@ async function initAdminDashboard() {
                     </span>
                 </td>
                 <td style="animation: slideDown ${0.45 + (idx * 0.05)}s ease;">
-                    <button class="btn btn-ghost btn-sm" onclick="showStudentDetails('${s._id}')" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4); color: #60a5fa;">
+                    <button class="btn btn-ghost btn-sm" onclick="showStudentDetails('${s.id}')" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4); color: #60a5fa;">
                         📊 التفاصيل
                     </button>
                 </td>
                 <td style="animation: slideDown ${0.5 + (idx * 0.05)}s ease;">
                     <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn btn-ghost btn-sm" onclick="addPointsToStudent('${s._id}')" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.4); color: #22c55e;">
+                        <button class="btn btn-ghost btn-sm" onclick="addPointsToStudent('${s.id}')" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.4); color: #22c55e;">
                             ➕ نقاط
                         </button>
-                        <button class="btn btn-ghost danger btn-sm" onclick="deleteStudent('${s._id}')" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+                        <button class="btn btn-ghost danger btn-sm" onclick="deleteStudent('${s.id}')" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
                             🗑️ حذف
                         </button>
                     </div>
@@ -3317,7 +3329,7 @@ window.showStudentDetails = async function(studentId) {
             window._adminStudentsList = students;
         }
         
-        const student = students.find(s => s._id === studentId);
+        const student = students.find(s => s.id === studentId);
         
         if (!student) {
             showFeedback(t('error_generic'), 'error');
@@ -3402,13 +3414,13 @@ window.showStudentDetails = async function(studentId) {
                 <div style="background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1.5rem; border: 1px solid rgba(255,255,255,0.05);">
                     <h4 style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1rem;">🛠️ إجراءات إدارية سريعة</h4>
                     <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
-                        <button onclick="resetStudentPoints('${student._id}')" class="btn btn-ghost danger btn-sm" style="flex: 1; min-width: 140px; padding: 0.6rem;">
+                        <button onclick="resetStudentPoints('${student.id}')" class="btn btn-ghost danger btn-sm" style="flex: 1; min-width: 140px; padding: 0.6rem;">
                             ${t('btn_reset_points')}
                         </button>
-                        <button onclick="unlockStudentSession('${student._id}')" class="btn btn-ghost btn-sm" style="flex: 1; min-width: 140px; padding: 0.6rem; border-color: #0ea5e9; color: #0ea5e9;">
+                        <button onclick="unlockStudentSession('${student.id}')" class="btn btn-ghost btn-sm" style="flex: 1; min-width: 140px; padding: 0.6rem; border-color: #0ea5e9; color: #0ea5e9;">
                             ${t('btn_unlock_next')}
                         </button>
-                        <button onclick="deleteStudent('${student._id}')" class="btn btn-ghost danger btn-sm" style="flex: 1; min-width: 140px; padding: 0.6rem; margin-top: 0.5rem; background: rgba(239, 68, 68, 0.1);">
+                        <button onclick="deleteStudent('${student.id}')" class="btn btn-ghost danger btn-sm" style="flex: 1; min-width: 140px; padding: 0.6rem; margin-top: 0.5rem; background: rgba(239, 68, 68, 0.1);">
                             🗑️ ${t('btn_delete')}
                         </button>
                     </div>

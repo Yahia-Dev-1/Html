@@ -45,9 +45,12 @@ router.get('/students', adminAuth, async (req, res) => {
 router.delete('/students/:id', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        await storage.deleteOne('users', { _id: id });
-        res.json({ message: 'User deleted successfully' });
+        console.log('[Admin] Deleting user:', id);
+        const result = await storage.deleteOne('users', { id: id });
+        console.log('[Admin] Delete result:', result);
+        res.json({ message: 'User deleted successfully', result });
     } catch (err) {
+        console.error('[Admin] Delete error:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -56,18 +59,21 @@ router.delete('/students/:id', adminAuth, async (req, res) => {
 router.post('/students/:id/reset-points', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        const updated = await storage.atomicUpdate('users', { _id: id }, (user) => {
+        console.log('[Admin] Resetting points for:', id);
+        const updated = await storage.atomicUpdate('users', { id: id }, (user) => {
             user.points = 0;
             return user;
         });
 
         if (!updated) {
+            console.log('[Admin] User not found:', id);
             return res.status(404).json({ message: 'الطالب غير موجود' });
         }
 
+        console.log('[Admin] Points reset successful:', updated.id);
         res.json({ message: 'تم تصفير النقاط بنجاح', points: 0 });
     } catch (err) {
-        console.error('Error resetting points:', err);
+        console.error('[Admin] Error resetting points:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -82,18 +88,21 @@ router.post('/students/:id/add-points', adminAuth, async (req, res) => {
             return res.status(400).json({ message: 'يجب أن تكون النقاط رقماً موجباً' });
         }
 
-        const updated = await storage.atomicUpdate('users', { _id: id }, (user) => {
+        console.log('[Admin] Adding', points, 'points to:', id);
+        const updated = await storage.atomicUpdate('users', { id: id }, (user) => {
             user.points = (user.points || 0) + points;
             return user;
         });
 
         if (!updated) {
+            console.log('[Admin] User not found for add points:', id);
             return res.status(404).json({ message: 'الطالب غير موجود' });
         }
 
+        console.log('[Admin] Points added successfully:', updated.id, updated.points);
         res.json({ message: `تم إضافة ${points} نقطة بنجاح`, points: updated.points });
     } catch (err) {
-        console.error('Error adding points:', err);
+        console.error('[Admin] Error adding points:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -102,7 +111,8 @@ router.post('/students/:id/add-points', adminAuth, async (req, res) => {
 router.post('/students/:id/unlock-session', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        const updated = await storage.atomicUpdate('users', { _id: id }, (user) => {
+        console.log('[Admin] Unlocking session for:', id);
+        const updated = await storage.atomicUpdate('users', { id: id }, (user) => {
             const maxSession = 4;
             if (user.currentSession < maxSession) {
                 user.currentSession = (user.currentSession || 1) + 1;
@@ -111,15 +121,17 @@ router.post('/students/:id/unlock-session', adminAuth, async (req, res) => {
         });
 
         if (!updated) {
+            console.log('[Admin] User not found for unlock:', id);
             return res.status(404).json({ message: 'الطالب غير موجود' });
         }
 
+        console.log('[Admin] Session unlocked:', updated.id, updated.currentSession);
         res.json({ 
             message: 'تم فتح المستوى التالي بنجاح', 
             currentSession: updated.currentSession 
         });
     } catch (err) {
-        console.error('Error unlocking session:', err);
+        console.error('[Admin] Error unlocking session:', err);
         res.status(500).json({ error: err.message });
     }
 });

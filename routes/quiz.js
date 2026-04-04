@@ -3,7 +3,7 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
-const storage = require('../services/storage');
+const storage = require('../services/supabase-storage');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'default_secret_key_change_in_production';
 
@@ -160,7 +160,7 @@ router.post('/validate', auth, async (req, res) => {
         const maxPoints = (targetQuestions.length * 5) + 20;
 
         // Perform atomic update inside storage
-        const updatedUser = await storage.atomicUpdate('users', { _id: req.user.id }, (user) => {
+        const updatedUser = await storage.atomicUpdate('users', { id: req.user.id }, (user) => {
             const quizId = `q_s${sessionId}`;
             if (!user.quizScores) user.quizScores = {};
             if (!user.completedQuizzes) user.completedQuizzes = [];
