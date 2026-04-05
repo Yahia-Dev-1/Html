@@ -36,13 +36,19 @@ function getChallengeIds(sessionId) {
 function isQuizCompleted(sessionId) {
     const quizId = getQuizId(sessionId);
     const completedQuizzes = state.user?.completedQuizzes || [];
-    const isCompleted = completedQuizzes.includes(quizId);
+    return completedQuizzes.includes(quizId);
+}
+
+function isSessionFullyCompleted(sessionId) {
+    // Check Quiz completion (score >= 50%)
+    const quizId = getQuizId(sessionId);
+    const completedQuizzes = state.user?.completedQuizzes || [];
+    const quizPassed = completedQuizzes.includes(quizId);
+
+    // Check Challenges completion (e.g., s1c1 to s1c4)
+    const { isDone: challengesDone } = getChallengeProgress(sessionId);
     
-    // Also check if user has passed this session (completed challenges)
-    const { completeCount } = getChallengeProgress(sessionId);
-    const allChallengesDone = completeCount >= 4;
-    
-    return isCompleted || allChallengesDone || (state.user.currentSession > sessionId);
+    return quizPassed && challengesDone;
 }
 
 function getQuizScore(sessionId) {
@@ -160,39 +166,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 showScreen('dashboard');
                 renderDashboard();
             }
+        } else {
+            // Logged in but no last screen, go to dashboard
+            showScreen('dashboard');
+            renderDashboard();
+        }
+
+        // Verify token is still valid in background
+        fetch(`${API_URL}/progress`, {
+            headers: { 'Authorization': `Bearer ${state.token}` }
+        }).then(res => {
+            if (res.ok) {
+                return res.json();
+            } else {
+                // Token invalid, clear saved data and show auth
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                sessionStorage.removeItem('lastScreen');
+                state.token = null;
+                state.user = null;
+                throw new Error('Invalid token');
+            }
+        }).then(userData => {
+            // Update user data with fresh data
+            state.user = userData;
+            localStorage.setItem('user', JSON.stringify(userData));
             
-            // Verify token is still valid in background
-            fetch(`${API_URL}/progress`, {
-                headers: { 'Authorization': `Bearer ${state.token}` }
-            }).then(res => {
-                if (res.ok) {
-                    return res.json();
-                } else {
-                    // Token invalid, clear saved data and show auth
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    sessionStorage.removeItem('lastScreen');
-                    state.token = null;
-                    state.user = null;
-                    throw new Error('Invalid token');
-                }
-            }).then(userData => {
-                // Update user data with fresh data
-                state.user = userData;
-                localStorage.setItem('user', JSON.stringify(userData));
-                if (lastScreen === 'dashboard') {
-                    renderDashboard(false); // Refresh without switching
-                }
-            }).catch(err => {
-                console.error('Token validation failed:', err);
+            // Refresh the current screen with fresh data if needed
+            if (state.screen === 'dashboard') {
+                renderDashboard(false); 
+            } else if (state.screen === 'category') {
+                showCategories(state.currentSession);
+            } else if (state.screen === 'admin' && state.user.role === 'Admin') {
+                initAdminDashboard();
+            }
+        }).catch(err => {
+            console.error('Token validation failed:', err);
+            // Don't logout if we are just on the wrong screen but token might be fine
+            if (state.screen === 'admin' && state.user && state.user.role !== 'Admin') {
+                showScreen('dashboard');
+                renderDashboard();
+            } else {
+                resetAuthForm('register');
                 showScreen('auth');
                 sessionStorage.removeItem('lastScreen');
-            });
-        } else {
-            showScreen('auth');
-            sessionStorage.removeItem('lastScreen');
-        }
+            }
+        });
     } else {
+        // Not logged in, go to registration by default
+        resetAuthForm('register');
         showScreen('auth');
         sessionStorage.removeItem('lastScreen');
     }
@@ -627,6 +649,37 @@ window.addEventListener('load', () => {
 // Removed this function as it's replaced with the above Screen Management function
 
 // --- Enhanced Auth Logic with Simple Characters ---
+// --- Authentication Helpers ---
+
+function resetAuthForm(mode = 'register') {
+    const fullNameInput = document.getElementById('fullName');
+    const passwordInput = document.getElementById('password');
+    const authError = document.getElementById('auth-error');
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    const btnAuth = document.getElementById('btn-auth');
+    const nameLabel = document.querySelector('label[for="fullName"]');
+
+    if (fullNameInput) fullNameInput.value = '';
+    if (passwordInput) passwordInput.value = '';
+    if (authError) authError.classList.add('hidden');
+
+    state.authMode = mode;
+
+    if (mode === 'register') {
+        if (tabRegister) tabRegister.classList.add('active');
+        if (tabLogin) tabLogin.classList.remove('active');
+        if (btnAuth) btnAuth.textContent = 'إنشاء حساب جديد';
+        if (nameLabel) nameLabel.textContent = 'الاسم بالكامل (ثنائي على الأقل)';
+        if (fullNameInput) fullNameInput.required = true;
+    } else {
+        if (tabLogin) tabLogin.classList.add('active');
+        if (tabRegister) tabRegister.classList.remove('active');
+        if (btnAuth) btnAuth.textContent = 'تسجيل الدخول';
+        if (nameLabel) nameLabel.textContent = 'اسم المستخدم (الاسم بالكامل)';
+    }
+}
+
 function initAuth() {
     const tabLogin = document.getElementById('tab-login');
     const tabRegister = document.getElementById('tab-register');
@@ -796,6 +849,8 @@ function showAuthError(msg) {
     const err = document.getElementById('auth-error');
     err.textContent = msg;
     err.classList.remove('hidden');
+    err.classList.add('animate-shake');
+    setTimeout(() => err.classList.remove('animate-shake'), 500);
 }
 
 // --- Dashboard Logic ---
@@ -1066,20 +1121,17 @@ function renderDashboard(switchScreen = true) {
         const isCompleted = completedQuizzes.includes(quizId);
         const quizScore = state.user.quizScores ? state.user.quizScores[quizId] : null;
 
-        // تحقق من أن جميع التحديات الأربعة مكتملة
-        const completedChallenges = state.user.completedChallenges || [];
-        const challengeDone = allChallengeIds.every(id => completedChallenges.includes(id));
-
-        // حساب عدد التحديات المكتملة من 4
-        const completeCount = allChallengeIds.filter(id => completedChallenges.includes(id)).length;
+        // تحقق من اكتمال الجلسة بالكامل (اختبار + تحديات)
+        const sessionFullyDone = isSessionFullyCompleted(session.id);
+        const { completeCount, isDone: challengeDone } = getChallengeProgress(session.id);
         const challengeProgressText = `${completeCount}/4`;
 
         const card = document.createElement('div');
-        card.className = `session-card ${isUnlocked ? '' : 'locked'} ${isCompleted ? 'completed' : ''}`;
+        card.className = `session-card ${isUnlocked ? '' : 'locked'} ${sessionFullyDone ? 'completed' : ''}`;
         card.style.animationDelay = `${session.id * 0.1}s`;
 
         let statusHtml = isUnlocked ? 'مفتوحة' : '🔒 مقفولة';
-        if (isCompleted && challengeDone) {
+        if (sessionFullyDone) {
             statusHtml = `<div class="completion-badge">✅ مكتمل بالكامل</div>`;
         }
 
@@ -1265,6 +1317,13 @@ function renderQuestion() {
                 <div class="option-icon"></div>
             `;
             btn.onclick = () => selectOption(i, btn);
+            
+            // Restore selected choice if available from previous state (e.g., refresh)
+            if (quizState.selectedChoice === i) {
+                btn.classList.add('selected');
+                document.getElementById('btn-confirm').disabled = false;
+            }
+            
             optionsGrid.appendChild(btn);
         });
         
@@ -1483,6 +1542,7 @@ async function handleConfirmClick() {
                     quizState.hintUsed = false;
                     quizState.deleteOptionUsed = false;
                     quizState.timeBonusGiven = false;
+                    quizState.selectedChoice = null; // Reset selected choice for next question
                     
                     // Reset help buttons
                     const hintBtn = document.getElementById('btn-quiz-hint');
@@ -1594,6 +1654,9 @@ function selectOption(choice, btn) {
     btn.classList.add('selected');
     quizState.selectedChoice = choice;
     document.getElementById('btn-confirm').disabled = false;
+    
+    // Save selected choice to quizState in localStorage
+    localStorage.setItem('quizState', JSON.stringify(quizState));
 }
 
 function autoConfirm() {
@@ -1853,7 +1916,8 @@ async function checkAndUnlockNextSession(sessionId) {
                     showPopup('✨ مبروك!', `🎉 رائع! لقد فتحت المرحلة ${data.currentSession} بنجاح.`, 'success', '🏆');
                     
                     // Refresh dashboard if we are on it
-                    if (document.getElementById('dashboard-screen').classList.contains('active')) {
+                    const dashboardEl = document.getElementById('screen-dashboard');
+                    if (dashboardEl && dashboardEl.classList.contains('active')) {
                         renderDashboard(false);
                     }
                 }
@@ -1861,17 +1925,6 @@ async function checkAndUnlockNextSession(sessionId) {
         } catch (err) {
             console.error('Error in checkAndUnlockNextSession API call:', err);
         }
-    } else {
-        // Prepare help message
-        let missingParts = [];
-        if (!quizPassed) {
-            missingParts.push('الاختبار النظري (بدرجة 50%+ )');
-        }
-        if (!challengesDone) {
-            missingParts.push('التحديات العملية (4 مستويات)');
-        }
-
-        // Message removed as per user request to avoid distraction after each part completion
     }
 }
 
@@ -1912,7 +1965,7 @@ function showHint(question) {
     }
     
     // Check if hint already exists
-    const existingHint = document.querySelector('.hint-text');
+    const existingHint = document.getElementById('quiz-hint-text');
     if (existingHint) {
         console.log('Hint already exists, removing old hint');
         existingHint.remove();
@@ -1924,19 +1977,27 @@ function showHint(question) {
     
     // Create hint element with the correct answer
     const hintElement = document.createElement('div');
-    hintElement.className = 'hint-text';
+    hintElement.id = 'quiz-hint-text';
+    hintElement.className = 'hint-text animate-popIn';
     hintElement.style.cssText = `
-        background: #fff3cd;
-        border: 1px solid #ffeaa7;
-        border-radius: 8px;
-        padding: 12px;
-        margin: 10px 0;
-        color: #856404;
-        font-size: 14px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        background: rgba(251, 191, 36, 0.1);
+        border: 1px solid rgba(251, 191, 36, 0.3);
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 1rem 0;
+        color: #fbbf24;
+        font-size: 0.95rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
     `;
     hintElement.innerHTML = `
-        <strong>💡 تلميح:</strong> ${question.hint || 'لا يوجد تلميح متاح لهذا السؤال'}
+        <span style="font-size: 1.5rem;">💡</span>
+        <div>
+            <strong style="display: block; margin-bottom: 0.25rem;">تلميح للمساعدة:</strong>
+            <span>${question.hint || 'لا يوجد تلميح متاح لهذا السؤال'}</span>
+        </div>
     `;
     
     // Insert hint after question text
@@ -1987,6 +2048,7 @@ async function showCategories(sessionId) {
     showScreen('category');
     state.currentSession = sessionId;
     sessionStorage.setItem('currentSession', sessionId);
+    saveCurrentPageState('category', { sessionId });
 
     const categoryGrid = document.getElementById('categories-grid');
     if (!categoryGrid) return;
@@ -4036,19 +4098,8 @@ function logout() {
     state.currentSession = null;
     state.currentChallenge = null;
     
-    // Clear auth form
-    const fullNameInput = document.getElementById('fullName');
-    const passwordInput = document.getElementById('password');
-    const btnAuth = document.getElementById('btn-auth');
-    const authError = document.getElementById('auth-error');
-    
-    if (fullNameInput) fullNameInput.value = '';
-    if (passwordInput) passwordInput.value = '';
-    if (btnAuth) {
-        btnAuth.disabled = false;
-        btnAuth.textContent = state.authMode === 'login' ? 'تسجيل الدخول' : 'إنشاء حساب';
-    }
-    if (authError) authError.classList.add('hidden');
+    // Clear and reset auth form to register mode
+    resetAuthForm('register');
     
     showScreen('auth');
 }

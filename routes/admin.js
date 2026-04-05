@@ -23,21 +23,27 @@ const adminAuth = (req, res, next) => {
 // Get All Students
 router.get('/students', adminAuth, async (req, res) => {
     try {
-        const users = await storage.find('users', {}); // Fetch all users
-        console.log('Users found:', users.length);
-        // Filter out admin users and return students only
+        console.log('[Admin] Fetching all students...');
+        const users = await storage.find('users', {}); 
+        
+        if (!users || !Array.isArray(users)) {
+            console.log('[Admin] No users found or error in fetch');
+            return res.json([]);
+        }
+
         const students = users
             .filter(u => {
-                const isAdmin = storage.isAdminUser(u.username);
-                console.log('User:', u.username, 'isAdmin:', isAdmin);
+                // Check if user is admin either by role or username
+                const isAdmin = u.role === 'Admin' || storage.isAdminUser(u.username);
                 return !isAdmin;
             })
             .map(({ password, ...rest }) => rest);
-        console.log('Students:', students.length);
+            
+        console.log(`[Admin] Found ${students.length} students`);
         res.json(students);
     } catch (err) {
-        console.error('Error in /students:', err);
-        res.status(500).json({ error: err.message });
+        console.error('[Admin] Error in /students:', err);
+        res.status(500).json({ error: 'حدث خطأ أثناء جلب بيانات الطلاب' });
     }
 });
 

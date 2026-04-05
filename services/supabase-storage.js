@@ -6,24 +6,25 @@ const path = require('path');
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
 
-const DATA_DIR = path.join(__dirname, '../data');
+const DATA_DIR = path.join(process.cwd(), 'data');
 let usingFileStorage = false;
 
 // File-based fallback
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
-// Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+// Ensure data directory exists (with try-catch for Vercel)
+try {
+    if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+} catch (e) {
+    console.log('[SupabaseStorage] File system is read-only (Vercel)');
 }
 
 // Read users from file (fallback)
 const readUsersFromFile = () => {
     try {
-        if (!fs.existsSync(USERS_FILE)) {
-            fs.writeFileSync(USERS_FILE, JSON.stringify([]), 'utf8');
-            return [];
-        }
+        if (!fs.existsSync(USERS_FILE)) return [];
         const data = fs.readFileSync(USERS_FILE, 'utf8');
         return data ? JSON.parse(data) : [];
     } catch (e) {
@@ -32,8 +33,9 @@ const readUsersFromFile = () => {
     }
 };
 
-// Write users to file (fallback)
+// Write users to file (fallback - disabled on Vercel)
 const writeUsersToFile = (users) => {
+    if (process.env.VERCEL) return;
     try {
         fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
     } catch (e) {
@@ -48,77 +50,34 @@ const generateId = () => {
 
 // Initialize Supabase client
 let supabase = null;
-usingFileStorage = false; // Use Supabase now that table is created
-
 if (supabaseUrl && supabaseKey) {
     try {
         supabase = createClient(supabaseUrl, supabaseKey);
-        console.log('[SupabaseStorage] ✅ Supabase client initialized (using file storage fallback)');
+        console.log('[SupabaseStorage] ✅ Supabase client initialized');
     } catch (err) {
         console.error('[SupabaseStorage] ❌ Failed to initialize Supabase:', err.message);
-    }
-} else {
-    console.log('[SupabaseStorage] No Supabase credentials, using file storage');
-}
-
-// Ensure users table exists
-async function ensureUsersTable() {
-    if (!supabase || usingFileStorage) return false;
-    
-    try {
-        // Check if table exists by querying it
-        const { error } = await supabase
-            .from('users')
-            .select('id')
-            .limit(1);
-        
-        if (error && error.code === '42P01') {
-            // Table doesn't exist - we'll handle this in the calling code
-            console.log('[SupabaseStorage] Users table may not exist');
-            return false;
-        }
-        
-        return true;
-    } catch (err) {
-        console.error('[SupabaseStorage] Error checking table:', err.message);
-        return false;
     }
 }
 
 const ADMIN_USERS = ['yahia'];
-function isAdminUser(username, userCount = null) {
-    if (ADMIN_USERS.includes(username)) return true;
-    if (userCount === 0) return true;
-    return false;
+function isAdminUser(username) {
+    return ADMIN_USERS.includes(username);
 }
 
 const storage = {
     find: async (coll, query = {}) => {
         if (coll !== 'users') {
-            // For non-user collections, use local JSON files
             const filePath = path.join(DATA_DIR, `${coll}.json`);
             try {
-                if (fs.existsSync(filePath)) {
-                    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-                }
-            } catch (e) {
-                console.error(`[SupabaseStorage] Error reading ${coll}:`, e.message);
-            }
+                if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            } catch (e) {}
             return [];
         }
 
-        // Users from Supabase or file
-        if (!usingFileStorage && supabase) {
+        if (supabase) {
             try {
-                const { data, error } = await supabase
-                    .from('users')
-                    .select('*');
-                
-                if (error) {
-                    console.error('[SupabaseStorage] Supabase query error:', error.message);
-                    usingFileStorage = true;
-                } else {
-                    // Convert snake_case to camelCase and apply query filter
+                const { data, error } = await supabase.from('users').select('*');
+                if (!error) {
                     const convertedData = (data || []).map(user => ({
                         id: user.id,
                         username: user.username,
@@ -132,23 +91,13 @@ const storage = {
                         quizScores: user.quiz_scores,
                         createdAt: user.created_at
                     }));
-                    
                     if (query && Object.keys(query).length > 0) {
-                        return convertedData.filter(user => {
-                            return Object.keys(query).every(key => {
-                                return user[key] == query[key];
-                            });
-                        });
+                        return convertedData.filter(user => Object.keys(query).every(key => user[key] == query[key]));
                     }
                     return convertedData;
                 }
-            } catch (err) {
-                console.error('[SupabaseStorage] Supabase find error:', err.message);
-                usingFileStorage = true;
-            }
+            } catch (err) {}
         }
-        
-        // Fallback to file storage
         return readUsersFromFile();
     },
 
@@ -159,206 +108,15 @@ const storage = {
 
     findUser: async (username) => {
         const normalizedUsername = username.trim().toLowerCase();
-        
-        if (!usingFileStorage && supabase) {
+        if (supabase) {
             try {
-                const { data, error } = await supabase
-                    .from('users')
-                    .select('*')
-                    .ilike('username', normalizedUsername)
-                    .single();
-                
-                if (error && error.code !== 'PGRST116') {
-                    console.error('[SupabaseStorage] findUser error:', error.message);
-                }
-                
+                const { data, error } = await supabase.from('users').select('*').ilike('username', normalizedUsername).single();
                 if (data) {
-                    if (isAdminUser(data.username)) data.role = 'Admin';
-                    return data;
-                }
-            } catch (err) {
-                console.error('[SupabaseStorage] findUser exception:', err.message);
-            }
-        }
-        
-        // File fallback
-        const users = readUsersFromFile();
-        const user = users.find(u => 
-            u.username.trim().toLowerCase() === normalizedUsername
-        );
-        if (user && isAdminUser(user.username)) user.role = 'Admin';
-        return user;
-    },
-
-    insert: async (coll, item) => {
-        if (coll !== 'users') return item;
-
-        if (!usingFileStorage && supabase) {
-            try {
-                // Convert camelCase to snake_case for Supabase
-                const supabaseItem = {
-                    username: item.username,
-                    password: item.password,
-                    role: item.role,
-                    display_name: item.displayName,
-                    current_session: item.current_session || item.currentSession || 1,
-                    points: item.points || 0,
-                    completed_challenges: item.completed_challenges || item.completedChallenges || [],
-                    completed_quizzes: item.completed_quizzes || item.completedQuizzes || [],
-                    quiz_scores: item.quiz_scores || item.quizScores || {}
-                };
-                
-                console.log('[SupabaseStorage] Inserting user:', supabaseItem.username);
-                
-                const { data, error } = await supabase
-                    .from('users')
-                    .insert([supabaseItem])
-                    .select()
-                    .single();
-                
-                if (error) {
-                    console.error('[SupabaseStorage] Insert error:', error.message, error.code, error.details);
-                    usingFileStorage = true;
-                } else {
-                    console.log('[SupabaseStorage] User inserted successfully:', data.id);
-                    return data;
-                }
-            } catch (err) {
-                console.error('[SupabaseStorage] Insert exception:', err.message);
-                usingFileStorage = true;
-            }
-        }
-        
-        // File fallback
-        const users = readUsersFromFile();
-        const newUser = { ...item, id: generateId() };
-        users.push(newUser);
-        writeUsersToFile(users);
-        return newUser;
-    },
-
-    update: async (coll, query, updates) => {
-        if (coll !== 'users') return null;
-
-        if (!usingFileStorage && supabase) {
-            try {
-                const { error } = await supabase
-                    .from('users')
-                    .update(updates)
-                    .match(query);
-                
-                if (error) {
-                    console.error('[SupabaseStorage] Update error:', error.message);
-                }
-                return { modifiedCount: 1 };
-            } catch (err) {
-                console.error('[SupabaseStorage] Update exception:', err.message);
-            }
-        }
-        return null;
-    },
-
-    deleteOne: async (coll, query) => {
-        if (coll !== 'users') return null;
-
-        if (!usingFileStorage && supabase) {
-            try {
-                console.log('[SupabaseStorage] Delete query:', query);
-                
-                // Build the match condition based on query fields
-                let matchQuery = {};
-                if (query.id) matchQuery.id = query.id;
-                if (query._id) matchQuery.id = query._id;
-                if (query.username) matchQuery.username = query.username;
-                
-                const { data, error } = await supabase
-                    .from('users')
-                    .delete()
-                    .match(matchQuery)
-                    .select();
-                
-                if (error) {
-                    console.error('[SupabaseStorage] Delete error:', error.message, error.code);
-                    return { deletedCount: 0 };
-                }
-                
-                console.log('[SupabaseStorage] Delete success:', data ? data.length : 0, 'rows');
-                return { deletedCount: data ? data.length : 0 };
-            } catch (err) {
-                console.error('[SupabaseStorage] Delete exception:', err.message);
-                return { deletedCount: 0 };
-            }
-        }
-        
-        // File fallback
-        const users = readUsersFromFile();
-        const initialLength = users.length;
-        const filtered = users.filter(user => user._id !== query._id && user.id !== query.id);
-        if (filtered.length < initialLength) {
-            writeUsersToFile(filtered);
-            return { deletedCount: 1 };
-        }
-        return { deletedCount: 0 };
-    },
-
-    atomicUpdate: async (coll, query, callback) => {
-        if (coll !== 'users') return null;
-
-        console.log('[SupabaseStorage] AtomicUpdate query:', query);
-        
-        // Find the user first
-        const users = await storage.find(coll, {});
-        let user = null;
-        
-        // Find by id or _id or username
-        if (query.id) {
-            user = users.find(u => u.id === query.id);
-        } else if (query._id) {
-            user = users.find(u => u.id === query._id);
-        } else if (query.username) {
-            user = users.find(u => u.username === query.username);
-        }
-        
-        if (!user) {
-            console.log('[SupabaseStorage] User not found for atomicUpdate');
-            return null;
-        }
-
-        const updated = callback({ ...user });
-        
-        if (!usingFileStorage && supabase) {
-            try {
-                // Convert camelCase back to snake_case for Supabase
-                const updateData = {
-                    username: updated.username,
-                    password: updated.password,
-                    role: updated.role,
-                    display_name: updated.displayName,
-                    current_session: updated.currentSession,
-                    points: updated.points,
-                    completed_challenges: updated.completedChallenges,
-                    completed_quizzes: updated.completedQuizzes,
-                    quiz_scores: updated.quizScores
-                };
-                
-                const { data, error } = await supabase
-                    .from('users')
-                    .update(updateData)
-                    .match({ id: user.id })
-                    .select()
-                    .single();
-                
-                if (error) {
-                    console.error('[SupabaseStorage] AtomicUpdate error:', error.message);
-                    usingFileStorage = true;
-                } else {
-                    console.log('[SupabaseStorage] AtomicUpdate success:', data.id);
-                    // Convert back to camelCase for response
-                    return {
+                    const user = {
                         id: data.id,
                         username: data.username,
                         password: data.password,
-                        role: data.role,
+                        role: isAdminUser(data.username) ? 'Admin' : data.role,
                         displayName: data.display_name,
                         currentSession: data.current_session,
                         points: data.points,
@@ -366,62 +124,103 @@ const storage = {
                         completedQuizzes: data.completed_quizzes,
                         quizScores: data.quiz_scores
                     };
+                    return user;
                 }
+            } catch (err) {}
+        }
+        const users = readUsersFromFile();
+        const user = users.find(u => u.username.trim().toLowerCase() === normalizedUsername);
+        if (user && isAdminUser(user.username)) user.role = 'Admin';
+        return user;
+    },
+
+    createUser: async (item) => {
+        const hashedPassword = await bcrypt.hash(item.password, 10);
+        const newUser = { ...item, password: hashedPassword };
+
+        if (supabase) {
+            try {
+                const supabaseItem = {
+                    username: newUser.username,
+                    password: newUser.password,
+                    role: newUser.role,
+                    display_name: newUser.displayName,
+                    current_session: 1,
+                    points: 0,
+                    completed_challenges: [],
+                    completed_quizzes: [],
+                    quiz_scores: {}
+                };
+                const { data, error } = await supabase.from('users').insert([supabaseItem]).select().single();
+                if (!error) return { ...data, id: data.id };
+            } catch (err) {}
+        }
+        const users = readUsersFromFile();
+        const finalUser = { ...newUser, id: generateId(), currentSession: 1, points: 0, completedChallenges: [], completedQuizzes: [], quizScores: {} };
+        users.push(finalUser);
+        writeUsersToFile(users);
+        return finalUser;
+    },
+
+    comparePassword: async (password, hash) => {
+        return bcrypt.compare(password, hash);
+    },
+
+    atomicUpdate: async (coll, query, updateFn) => {
+        const user = await storage.findOne(coll, query);
+        if (!user) return null;
+        const updatedData = updateFn({ ...user });
+        
+        if (supabase && coll === 'users') {
+            try {
+                const supabaseUpdate = {
+                    current_session: updatedData.currentSession,
+                    points: updatedData.points,
+                    completed_challenges: updatedData.completedChallenges,
+                    completed_quizzes: updatedData.completedQuizzes,
+                    quiz_scores: updatedData.quizScores,
+                    display_name: updatedData.displayName,
+                    role: updatedData.role
+                };
+                const { data, error } = await supabase.from('users').update(supabaseUpdate).match({ id: user.id }).select().single();
+                if (!error) return updatedData;
+                console.error('[SupabaseStorage] Update error:', error);
             } catch (err) {
-                console.error('[SupabaseStorage] AtomicUpdate exception:', err.message);
-                usingFileStorage = true;
+                console.error('[SupabaseStorage] Update catch error:', err);
             }
         }
         
-        // File fallback
-        const fileUsers = readUsersFromFile();
-        const index = fileUsers.findIndex(u => 
-            (u._id && u._id === query._id) || (u.id && u.id === query.id) ||
-            (u.username && u.username === query.username)
-        );
+        const users = readUsersFromFile();
+        const index = users.findIndex(u => u.id === user.id);
         if (index !== -1) {
-            fileUsers[index] = { ...fileUsers[index], ...updated };
-            writeUsersToFile(fileUsers);
-            return fileUsers[index];
+            users[index] = updatedData;
+            writeUsersToFile(users);
         }
-        return null;
+        return updatedData;
     },
 
-    createUser: async (userData) => {
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(userData.password, salt);
-        
-        // Count existing users
-        let userCount = 0;
-        try {
-            const existing = await storage.find('users', {});
-            userCount = existing.length;
-        } catch (e) {
-            console.error('[SupabaseStorage] Error counting users:', e.message);
+    deleteOne: async (coll, query) => {
+        if (supabase && coll === 'users') {
+            try {
+                const { error } = await supabase.from('users').delete().match(query);
+                if (!error) return true;
+                console.error('[SupabaseStorage] Delete error:', error);
+            } catch (err) {
+                console.error('[SupabaseStorage] Delete catch error:', err);
+            }
         }
 
-        const role = isAdminUser(userData.username, userCount) ? 'Admin' : 'Student';
-
-        const user = {
-            ...userData,
-            password: hashedPassword,
-            role: role,
-            current_session: 1,
-            completed_challenges: [],
-            completed_quizzes: [],
-            quiz_scores: {},
-            points: 0,
-            created_at: new Date().toISOString()
-        };
-        
-        return await storage.insert('users', user);
+        const users = readUsersFromFile();
+        const initialLen = users.length;
+        const filtered = users.filter(u => !Object.keys(query).every(key => u[key] == query[key]));
+        if (filtered.length !== initialLen) {
+            writeUsersToFile(filtered);
+            return true;
+        }
+        return false;
     },
 
-    comparePassword: async (password, hash) => await bcrypt.compare(password, hash),
-    
-    isAdminUser: (username, userCount = null) => isAdminUser(username, userCount),
-    
-    getStorageType: () => usingFileStorage ? 'file' : 'supabase'
+    isAdminUser
 };
 
 module.exports = storage;
