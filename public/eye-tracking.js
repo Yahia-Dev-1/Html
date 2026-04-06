@@ -6,7 +6,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     console.log('Eye tracking initialized:', eyes.length, 'eyes found');
 
+    // Check if mobile device for throttling
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    const throttleMs = isMobile ? 50 : 16; // 20fps on mobile, 60fps on desktop
+    let lastUpdate = 0;
+
     const handleMove = (e) => {
+        const now = Date.now();
+        if (now - lastUpdate < throttleMs) return;
+        lastUpdate = now;
+
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 

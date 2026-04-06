@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Restore the last screen if available
         if (lastScreen && lastScreen !== 'auth') {
             // Show the last screen
-            showScreen(lastScreen);
+            showScreen(lastScreen, true, true);
             
             // Handle specific screen restoration
             if (lastScreen === 'dashboard') {
@@ -108,12 +108,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     } catch (err) {
                         // If parsing fails, go to dashboard
-                        showScreen('dashboard');
+                        showScreen('dashboard', true, true);
                         renderDashboard();
                     }
                 } else {
                     // No saved state, go to dashboard
-                    showScreen('dashboard');
+                    showScreen('dashboard', true, true);
                     renderDashboard();
                 }
             } else if (lastScreen === 'challenge') {
@@ -135,12 +135,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         renderEditor();
                     } catch (err) {
                         console.error('Failed to restore challenge state:', err);
-                        showScreen('dashboard');
+                        showScreen('dashboard', true, true);
                         renderDashboard();
                     }
                 } else {
                     // No saved state, go to dashboard
-                    showScreen('dashboard');
+                    showScreen('dashboard', true, true);
                     renderDashboard();
                 }
             } else if (lastScreen === 'category') {
@@ -149,26 +149,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (currentPageState && currentPageState.screenType === 'category') {
                     showCategories(currentPageState.data.sessionId);
                 } else {
-                    showScreen('dashboard');
+                    showScreen('dashboard', true, true);
                     renderDashboard();
                 }
             } else if (lastScreen === 'admin') {
                 // Restore admin panel if user is admin
-                if (state.user && state.user.role === 'Admin') {
-                    showScreen('admin');
+                const isAdmin = state.user && (state.user.role === 'Admin' || state.user.role === 'admin');
+                console.log('Restoring admin screen, user:', state.user?.username, 'role:', state.user?.role, 'isAdmin:', isAdmin);
+                if (isAdmin) {
+                    showScreen('admin', true, true);
                     initAdminDashboard();
                 } else {
-                    showScreen('dashboard');
+                    console.log('User is not admin, redirecting to dashboard');
+                    showScreen('dashboard', true, true);
                     renderDashboard();
                 }
             } else {
                 // Any other screen, go to dashboard
-                showScreen('dashboard');
+                showScreen('dashboard', true, true);
                 renderDashboard();
             }
         } else {
             // Logged in but no last screen, go to dashboard
-            showScreen('dashboard');
+            showScreen('dashboard', true, true);
             renderDashboard();
         }
 
@@ -188,9 +191,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Invalid token');
             }
         }).then(userData => {
-            // Update user data with fresh data
-            state.user = userData;
-            localStorage.setItem('user', JSON.stringify(userData));
+            // Verify the returned user matches the current user
+            if (userData && userData.id && state.user && state.user.id && userData.id !== state.user.id) {
+                console.error('User ID mismatch! API returned different user. Keeping original user data.');
+                // Don't overwrite user data - keep the original from localStorage
+                return;
+            }
+            
+            // Merge fresh data with existing user data to preserve important fields
+            const originalUser = { ...state.user };
+            state.user = { ...originalUser, ...userData };
+            
+            // Ensure critical fields are preserved
+            if (!state.user.username && originalUser.username) {
+                state.user.username = originalUser.username;
+            }
+            if (!state.user.role && originalUser.role) {
+                state.user.role = originalUser.role;
+            }
+            if (!state.user.id && originalUser.id) {
+                state.user.id = originalUser.id;
+            }
+            
+            localStorage.setItem('user', JSON.stringify(state.user));
             
             // Refresh the current screen with fresh data if needed
             if (state.screen === 'dashboard') {
@@ -208,14 +231,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderDashboard();
             } else {
                 resetAuthForm('register');
-                showScreen('auth');
+                showScreen('auth', true, true);
                 sessionStorage.removeItem('lastScreen');
             }
         });
     } else {
         // Not logged in, go to registration by default
         resetAuthForm('register');
-        showScreen('auth');
+        showScreen('auth', true, true);
         sessionStorage.removeItem('lastScreen');
     }
 
@@ -583,7 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- Screen Management ---
 
 
-function showScreen(screenId, addHistory = true) {
+function showScreen(screenId, addHistory = true, isInitialLoad = false) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const screenEl = document.getElementById(`screen-${screenId}`);
     if (screenEl) {
@@ -592,12 +615,17 @@ function showScreen(screenId, addHistory = true) {
         state.screen = screenId;
 
         // Manage browser history state so back/forward works
+        // Use replaceState on initial load to avoid history trap
         if (addHistory) {
             const stateObj = { screenId };
             try {
-                window.history.pushState(stateObj, '', `#${screenId}`);
+                if (isInitialLoad) {
+                    window.history.replaceState(stateObj, '', `#${screenId}`);
+                } else {
+                    window.history.pushState(stateObj, '', `#${screenId}`);
+                }
             } catch (err) {
-                console.warn('History state push failed', err);
+                console.warn('History state update failed', err);
             }
         }
 
@@ -642,7 +670,7 @@ window.addEventListener('popstate', (event) => {
 window.addEventListener('load', () => {
     const initialScreen = window.location.hash.replace('#', '') || sessionStorage.getItem('lastScreen') || 'dashboard';
     window.history.replaceState({ screenId: initialScreen }, '', `#${initialScreen}`);
-    showScreen(initialScreen, false);
+    showScreen(initialScreen, false, true);
 });
 
 // --- Navigation ---
@@ -3220,7 +3248,9 @@ function initTouchDragSupport(element, getData, onDrop) {
 
 // --- Admin Logic ---
 async function initAdminDashboard() {
-    if (!state.user || state.user.username !== 'yahia') {
+    const isAdmin = state.user && (state.user.role === 'Admin' || state.user.role === 'admin');
+    if (!state.user || !isAdmin) {
+        console.log('Not admin, redirecting to dashboard. User:', state.user?.username, 'Role:', state.user?.role);
         showScreen('dashboard');
         return;
     }
